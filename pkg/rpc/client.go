@@ -19,7 +19,7 @@ type (
 
 	rpcError struct {
 		Message string `json:"message"`
-		Code    int64  `json:"code"`
+		Code    int64  `json:"id"`
 	}
 
 	rpcRequest struct {
@@ -57,6 +57,7 @@ func NewRPCClient(rpcAddr string) *RPCClient {
 }
 
 func formatRPCRequest(method string, params []interface{}) io.Reader {
+
 	r := &rpcRequest{
 		Version: "2.0",
 		ID:      1,
@@ -73,8 +74,8 @@ func formatRPCRequest(method string, params []interface{}) io.Reader {
 	return bytes.NewBuffer(b)
 }
 
-func (c *RPCClient) rpcRequest(ctx context.Context, data io.Reader, rpcAddr string) ([]byte, error) {
-	req, err := http.NewRequestWithContext(ctx, "POST", rpcAddr, data)
+func (c *RPCClient) rpcRequest(ctx context.Context, data io.Reader) ([]byte, error) {
+	req, err := http.NewRequestWithContext(ctx, "POST", c.rpcAddr, data)
 	if err != nil {
 		panic(err)
 	}

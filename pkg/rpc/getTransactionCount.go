@@ -9,14 +9,14 @@ import (
 )
 
 type (
-	GetMinimumLedgerSlotResponse struct {
+	GetTransectionCountResponse struct {
 		Result int      `json:"result"`
 		Error  rpcError `json:"error"`
 	}
 )
 
-func (c *RPCClient) GetMinimunLeadegerSlot(ctx context.Context) (*GetTransectionCountResponse, error) {
-	body, err := c.rpcRequest(ctx, formatRPCRequest("minimumLedgerSlot", []interface{}{}))
+func (c *RPCClient) GetTransectionCount(ctx context.Context) (*GetTransectionCountResponse, error) {
+	body, err := c.rpcRequest(ctx, formatRPCRequest("getTransactionCount", []interface{}{}))
 
 	fmt.Println("~~Body: %w~~", body)
 	fmt.Println(body == nil)

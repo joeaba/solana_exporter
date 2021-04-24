@@ -9,14 +9,14 @@ import (
 )
 
 type (
-	GetMinimumLedgerSlotResponse struct {
-		Result int      `json:"result"`
+	GetSlotLeaderResponse struct {
+		Result string   `json:"result"`
 		Error  rpcError `json:"error"`
 	}
 )
 
-func (c *RPCClient) GetMinimunLeadegerSlot(ctx context.Context) (*GetTransectionCountResponse, error) {
-	body, err := c.rpcRequest(ctx, formatRPCRequest("minimumLedgerSlot", []interface{}{}))
+func (c *RPCClient) GetSlotleader(ctx context.Context) (*GetSlotLeaderResponse, error) {
+	body, err := c.rpcRequest(ctx, formatRPCRequest("getSlotLeader", []interface{}{}))
 
 	fmt.Println("~~Body: %w~~", body)
 	fmt.Println(body == nil)
@@ -27,10 +27,9 @@ func (c *RPCClient) GetMinimunLeadegerSlot(ctx context.Context) (*GetTransection
 	if err != nil {
 		return nil, fmt.Errorf("RPC call failed: %w", err)
 	}
+	klog.V(2).Infof("getSlotLeader response: %v", string(body))
 
-	klog.V(2).Infof("getTransectionCount response: %v", string(body))
-
-	var resp GetTransectionCountResponse
+	var resp GetSlotLeaderResponse
 	if err = json.Unmarshal(body, &resp); err != nil {
 		return nil, fmt.Errorf("failed to decode response body: %w", err)
 	}

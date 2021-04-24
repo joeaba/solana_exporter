@@ -8,29 +8,31 @@ import (
 	"k8s.io/klog/v2"
 )
 
-type (
-	GetMinimumLedgerSlotResponse struct {
-		Result int      `json:"result"`
-		Error  rpcError `json:"error"`
-	}
-)
+type GetBalanceResponse struct {
+	Result struct {
+		ContextSlot struct {
+			Slot int64 `json:"slot"`
+		} `json:"context"`
+		Value       int64 `json:"value"`
+	} `json:"result"`
+	Error rpcError `json:"error"`
+}
 
-func (c *RPCClient) GetMinimunLeadegerSlot(ctx context.Context) (*GetTransectionCountResponse, error) {
-	body, err := c.rpcRequest(ctx, formatRPCRequest("minimumLedgerSlot", []interface{}{}))
-
+func (c *RPCClient) GetBalance(ctx context.Context, pubkey string) (*GetBalanceResponse, error) {
+	body, err := c.rpcRequest(ctx, formatRPCRequest("getBalance", []interface{}{pubkey}))
 	fmt.Println("~~Body: %w~~", body)
 	fmt.Println(body == nil)
+	
 	if body == nil {
 		return nil, fmt.Errorf("RPC call failed: Body empty")
 	}
-
 	if err != nil {
 		return nil, fmt.Errorf("RPC call failed: %w", err)
 	}
 
-	klog.V(2).Infof("getTransectionCount response: %v", string(body))
+	klog.V(2).Infof("getBalance response: %v", string(body))
 
-	var resp GetTransectionCountResponse
+	var resp GetBalanceResponse
 	if err = json.Unmarshal(body, &resp); err != nil {
 		return nil, fmt.Errorf("failed to decode response body: %w", err)
 	}

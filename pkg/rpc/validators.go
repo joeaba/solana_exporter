@@ -31,7 +31,9 @@ type (
 
 // https://docs.solana.com/developing/clients/jsonrpc-api#getvoteaccounts
 func (c *RPCClient) GetVoteAccounts(ctx context.Context, commitment Commitment) (*GetVoteAccountsResponse, error) {
-	body, err := c.rpcRequest(ctx, formatRPCRequest("getVoteAccounts", []interface{}{commitment}), c.rpcAddr)
+	body, err := c.rpcRequest(ctx, formatRPCRequest("getVoteAccounts", []interface{}{commitment}))
+	fmt.Println("~~Body: %w~~", body)
+	fmt.Println(body == nil)
 	if err != nil {
 		return nil, fmt.Errorf("RPC call failed: %w", err)
 	}

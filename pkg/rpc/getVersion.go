@@ -8,15 +8,19 @@ import (
 	"k8s.io/klog/v2"
 )
 
+type solonacore struct {
+	SolonaCore string `json:"solana-core"`
+}
+
 type (
-	GetMinimumLedgerSlotResponse struct {
-		Result int      `json:"result"`
-		Error  rpcError `json:"error"`
+	GetVersionResponse struct {
+		Result solonacore `json:"result"`
+		Error  rpcError   `json:"error"`
 	}
 )
 
-func (c *RPCClient) GetMinimunLeadegerSlot(ctx context.Context) (*GetTransectionCountResponse, error) {
-	body, err := c.rpcRequest(ctx, formatRPCRequest("minimumLedgerSlot", []interface{}{}))
+func (c *RPCClient) GetVersion(ctx context.Context) (*GetVersionResponse, error) {
+	body, err := c.rpcRequest(ctx, formatRPCRequest("getVersion", []interface{}{}))
 
 	fmt.Println("~~Body: %w~~", body)
 	fmt.Println(body == nil)
@@ -28,9 +32,9 @@ func (c *RPCClient) GetMinimunLeadegerSlot(ctx context.Context) (*GetTransection
 		return nil, fmt.Errorf("RPC call failed: %w", err)
 	}
 
-	klog.V(2).Infof("getTransectionCount response: %v", string(body))
+	klog.V(2).Infof("GetVersion response: %v", string(body))
 
-	var resp GetTransectionCountResponse
+	var resp GetVersionResponse
 	if err = json.Unmarshal(body, &resp); err != nil {
 		return nil, fmt.Errorf("failed to decode response body: %w", err)
 	}

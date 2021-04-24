@@ -1,0 +1,35 @@
+{
+    "node_ip": [
+        "x5.x9x.x3.x0x",
+        "xexnxt.xoxaxa.xox",
+        "x4.x2.x7.x6",
+        "x5.x8x.x3x.x2",
+        "x5.x3x.x9x.x"
+    ],
+    "stake_account_pubkey": [
+        "xdxUxuxjxrxdxqxmx7xGxKxFxixixHxGx3xNxoxHxRxU",
+        "xLxjxwx3xSxSxFx4xex3xHxax1xJxZxwxSxnxKxKxZxh"
+    ],
+    "token_account_pubkey": [
+        "xfxAxdxtxuxbx3xMx4xKxLxyxaxSxtxLxUxvx5xoxLx7",
+        "xEx1xTx9xhxkxxx3xyxwxZxDxuxgx7x2xdxjxCxxx6xu"
+    ],
+    "account_owner_pubkey_mint": [
+        ["xQxex8xNxcxFxSxhxzxyxMxSxix4xHxExWxVxJxTx9xF",
+            "xwxAx7xtxTxVxZxtxFxPxax6xmxvxbxCxKxFxmxNx7xE"],
+        ["xax9xnxmxTxbxsxexaxExqxzxXx4xjxXxuxcxPxPxexz",
+            "xMx9xXxxxYxqxVxXxXxVxwxQx6xqxQxuxaxExFxHxQx1"]
+    ],
+    "token_mint_pubkey": [
+        "xwxAx7xtxTxVxZxtxFxPxax6xmxvxbxCxKxFxmxNx7xE",
+        "xax2xBxvxyx1x4xZxSxhxVxkxwxQxBxsxjxdxpxsxvxQ"
+    ],
+    "account_info_pubkey": [
+        "xfxNx3xoxWxQxdxtxGx9xpxRxyxpxSx6xYxpx7xvxYxA",
+        "xrxjxKxtxdxGxbxSxAx9xhxYxqxWxdxgxNx6xPxFx6xa"
+    ],
+    "account_balance_pubkey": [
+        "x3xsxBxgxLxdx2x5x1xpxqxtxFxJxnxexwxYxmxLxcxi",
+        "xGxPxyxuxYxjxRxyxmxSxBx3xexZxZx5xExHxExLx1xQ"
+    ]
+}

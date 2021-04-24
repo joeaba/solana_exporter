@@ -1,62 +1,17 @@
 package main
 
 import (
+	"collectors"
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/certusone/solana_exporter/pkg/rpc"
 	"github.com/prometheus/client_golang/prometheus"
 	"k8s.io/klog/v2"
-	"time"
 )
 
-const (
-	slotPacerSchedule = 1 * time.Second
-)
-
-var (
-	totalTransactionsTotal = prometheus.NewGauge(prometheus.GaugeOpts{
-		Name: "solana_confirmed_transactions_total",
-		Help: "Total number of transactions processed since genesis (max confirmation)",
-	})
-
-	confirmedSlotHeight = prometheus.NewGauge(prometheus.GaugeOpts{
-		Name: "solana_confirmed_slot_height",
-		Help: "Last confirmed slot height processed by watcher routine (max confirmation)",
-	})
-
-	currentEpochNumber = prometheus.NewGauge(prometheus.GaugeOpts{
-		Name: "solana_confirmed_epoch_number",
-		Help: "Current epoch (max confirmation)",
-	})
-
-	epochFirstSlot = prometheus.NewGauge(prometheus.GaugeOpts{
-		Name: "solana_confirmed_epoch_first_slot",
-		Help: "Current epoch's first slot (max confirmation)",
-	})
-
-	epochLastSlot = prometheus.NewGauge(prometheus.GaugeOpts{
-		Name: "solana_confirmed_epoch_last_slot",
-		Help: "Current epoch's last slot (max confirmation)",
-	})
-
-	leaderSlotsTotal = prometheus.NewCounterVec(
-		prometheus.CounterOpts{
-			Name: "solana_leader_slots_total",
-			Help: "Number of leader slots per leader, grouped by skip status (max confirmation)",
-		},
-		[]string{"status", "nodekey"})
-)
-
-func init() {
-	prometheus.MustRegister(totalTransactionsTotal)
-	prometheus.MustRegister(confirmedSlotHeight)
-	prometheus.MustRegister(currentEpochNumber)
-	prometheus.MustRegister(epochFirstSlot)
-	prometheus.MustRegister(epochLastSlot)
-	prometheus.MustRegister(leaderSlotsTotal)
-}
-
-func (c *solanaCollector) WatchSlots() {
+func WatchSlots(c *collectors.SolanaCollector) {
 	var (
 		// Current mapping of relative slot numbers to leader public keys.
 		epochSlots map[int64]string
@@ -71,15 +26,15 @@ func (c *solanaCollector) WatchSlots() {
 	for {
 		<-ticker.C
 
-		// Get current slot height and epoch info
 		ctx, cancel := context.WithTimeout(context.Background(), httpTimeout)
-		info, err := c.rpcClient.GetEpochInfo(ctx, rpc.CommitmentMax)
+
+		// Get current slot height and epoch info
+		info, err := c.RpcClient.GetEpochInfo(ctx, rpc.CommitmentMax)
 		if err != nil {
-			klog.Infof("failed to fetch info info, retrying: %v", err)
+			klog.Infof("failed to fetch epoch info, retrying: %v", err)
 			cancel()
 			continue
 		}
-		cancel()
 
 		// Calculate first and last slot in epoch.
 		firstSlot := info.AbsoluteSlot - info.SlotIndex
@@ -91,11 +46,53 @@ func (c *solanaCollector) WatchSlots() {
 		epochFirstSlot.Set(float64(firstSlot))
 		epochLastSlot.Set(float64(lastSlot))
 
+		// Get the slot of the lowest confirmed block that has not been purged from the ledger
+		block, err := c.RpcClient.GetFirstAvailableBlock(ctx)
+		if err != nil {
+			klog.Infof("failed to fetch first available block, retrying: %v", err)
+		}
+
+		// Get the max slot seen from retransmit stage
+		maxSlot, err := c.RpcClient.GetMaxRetransmitSlot(ctx)
+		if err != nil {
+			klog.Infof("failed to fetch max retransmit slot, retrying: %v", err)
+		}
+
+		// Returns the current slot the node is processing
+		slot, err := c.RpcClient.GetSlot(ctx)
+		if err != nil {
+			klog.Infof("failed to fetch slot, retrying: %v", err)
+		}
+
+		leader, err := c.RpcClient.GetSlotLeader(ctx)
+		if err != nil {
+			klog.Infof("failed to fetch leader, retrying: %v", err)
+		}
+
+		minLedgerSlot, err := c.RpcClient.GetMinimumLedgerSlot(ctx)
+		if err != nil {
+			klog.Infof("failed to fetch minimum ledger slot, retrying: %v", err)
+		}
+
+		count, err := c.RpcClient.GetTransactionCount(ctx)
+		if err != nil {
+			klog.Infof("failed to fetch transaction count, retrying: %v", err)
+		}
+
+		firstAvailableBlock.Set(float64(block))
+		maxRetransmitSlot.Set(float64(maxSlot))
+		currentSlot.Set(float64(slot))
+		slotLeader.With(prometheus.Labels{"leader": leader}).Add(0)
+		minimumLedgerSlot.Set(float64(minLedgerSlot))
+		transactionCount.Set(float64(count))
+
+		cancel()
+
 		// Check whether we need to fetch a new leader schedule
 		if epochNumber != info.Epoch {
 			klog.Infof("new epoch at slot %d: %d (previous: %d)", firstSlot, info.Epoch, epochNumber)
 
-			epochSlots, err = c.fetchLeaderSlots(firstSlot)
+			epochSlots, err = fetchLeaderSlots(c, firstSlot)
 			if err != nil {
 				klog.Errorf("failed to request leader schedule, retrying: %v", err)
 				continue
@@ -122,7 +119,7 @@ func (c *solanaCollector) WatchSlots() {
 		rangeEnd := firstSlot + info.SlotIndex - 1
 
 		ctx, cancel = context.WithTimeout(context.Background(), httpTimeout)
-		cfm, err := c.rpcClient.GetConfirmedBlocks(ctx, rangeStart, rangeEnd)
+		cfm, err := c.RpcClient.GetConfirmedBlocks(ctx, rangeStart, rangeEnd)
 		if err != nil {
 			klog.Errorf("failed to request confirmed blocks at %d, retrying: %v", watermark, err)
 			cancel()
@@ -168,8 +165,8 @@ func (c *solanaCollector) WatchSlots() {
 	}
 }
 
-func (c *solanaCollector) fetchLeaderSlots(epochSlot int64) (map[int64]string, error) {
-	sch, err := c.rpcClient.GetLeaderSchedule(context.Background(), epochSlot)
+func fetchLeaderSlots(c *collectors.SolanaCollector, epochSlot int64) (map[int64]string, error) {
+	sch, err := c.RpcClient.GetLeaderSchedule(context.Background(), epochSlot)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get leader schedule: %w", err)
 	}
